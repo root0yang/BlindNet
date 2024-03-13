@@ -4,7 +4,7 @@ This repository provides the official PyTorch implementation of the following pa
 > Woo-Jin Ahn, Geun-Yeong Yang, Hyun-Duck Choi, Myo-Taeg Lim<br>
 > Korea University, Chonnam National University
 
-> **Abstract**
+> **Abstract:**
 > *Deep learning models for semantic segmentation often
 experience performance degradation when deployed to unseen target domains unidentified during the training phase.
 This is mainly due to variations in image texture (i.e. style)

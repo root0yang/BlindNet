@@ -146,7 +146,7 @@ __C.DATASET.SYNTHIA_DIR = <YOUR_SYNTHIA_PATH>
 <path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/train_wildnet_r50os16_gtav.sh
 ```
 
-6. You can download Our ResNet-50 model trained with GTAV at [Google Drive](http://google-drive) and validate pretrained model with the following command
+6. You can download Our ResNet-50 model trained with GTAV at Google Drive(will be uploaded soon.) and validate pretrained model with the following command
 ```
 <path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/valid_wildnet_r50os16_gtav.sh <weight_file_location>
 ```

@@ -37,9 +37,9 @@ cd BlindNet
 ```
 Install following packages.
 ```
-conda create --name blindnet python=3.7
+conda create --name blindnet python=3.6
 conda activate blindnet
-conda install pytorch torchvision torchaudio cudatoolkit==10.2
+conda install pytorch==1.2.0 cudatoolkit==10.2
 conda install scipy==1.1.0
 conda install tqdm==4.46.0
 conda install scikit-image==0.16.2

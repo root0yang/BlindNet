@@ -141,14 +141,14 @@ __C.DATASET.BDD_DIR = <YOUR_BDD_PATH>
 #Synthia Dataset Dir Location
 __C.DATASET.SYNTHIA_DIR = <YOUR_SYNTHIA_PATH>
 ```
-5. You can train WildNet with the following command.
+5. You can train BlindNet with the following command.
 ```
-<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/train_wildnet_r50os16_gtav.sh
+<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/blindnet_train_r50os16_gtav.sh
 ```
 
 6. You can download Our ResNet-50 model trained with GTAV at Google Drive(will be uploaded soon.) and validate pretrained model with the following command
 ```
-<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/valid_wildnet_r50os16_gtav.sh <weight_file_location>
+<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/blindnet_valid_r50os16_gtav.sh <weight_file_location>
 ```
 
 7. You can infer the segmentation results from images through pretrained model with following commands.

@@ -1,6 +1,6 @@
 # BlindNet (CVPR 2024) : Official Project Webpage
 This repository provides the official PyTorch implementation of the following paper:
-> [**Style Blind Domain Generalized Semantic Segmentation via Covariance Alignment and Semantic Consistence Contrastive Learning**](https://arxiv.org/pdf/2403.06122.pdf])<br>
+> [**Style Blind Domain Generalized Semantic Segmentation via Covariance Alignment and Semantic Consistence Contrastive Learning**](https://arxiv.org/abs/2403.06122)<br>
 > Woo-Jin Ahn, Geun-Yeong Yang, Hyun-Duck Choi, Myo-Taeg Lim<br>
 > Korea University, Chonnam National University
 

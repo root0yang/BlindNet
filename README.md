@@ -156,6 +156,16 @@ __C.DATASET.SYNTHIA_DIR = <YOUR_SYNTHIA_PATH>
 <path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/infer_r50os16_cty.sh <weight_file_location> <result_save_location>
 ```
 
+## Citation
+If you find this work useful in your research, please cite our paper:
+```
+@article{ahn2024style,
+  title={Style Blind Domain Generalized Semantic Segmentation via Covariance Alignment and Semantic Consistence Contrastive Learning},
+  author={Ahn, Woo-Jin and Yang, Geun-Yeong and Choi, Hyun-Duck and Lim, Myo-Taeg},
+  journal={arXiv preprint arXiv:2403.06122},
+  year={2024}
+}
+```
  
 ## Terms of Use
 This software is for non-commercial use only.

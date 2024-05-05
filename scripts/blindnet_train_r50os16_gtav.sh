@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 export NCCL_DEBUG=INFO
 
-     python -m torch.distributed.launch --nproc_per_node=2 --master_port=29400 train.py \
+     python -m torch.distributed.launch --nproc_per_node=2 train.py \
         --dataset gtav_jitter \
         --covstat_val_dataset gtav \
         --val_dataset cityscapes bdd100k mapillary \
@@ -36,6 +36,6 @@ export NCCL_DEBUG=INFO
         --w4 0.3 \
         --num_patch 20 \
         --date 0326 \
-        --exp BlindNet_r50os16_gtav_retrain \
+        --exp BlindNet_r50os16_gtav \
         --ckpt ./logs/ \
         --tb_path ./logs/

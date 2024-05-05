@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import Any
 from packaging import version
 
@@ -230,4 +231,4 @@ class ProjectionHead(nn.Module):
     def forward(self, x):
         return self.l2norm(self.proj(x))
         #return F.normalize(self.proj(x), p=2, dim=1)
-    
+

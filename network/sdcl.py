@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from network.mynn import initialize_weights
 import numpy as np
 import time
-    
-    
+
+
 class Disentangle_Contrast(nn.Module):
     def __init__(self, args):
         super(Disentangle_Contrast, self).__init__()
@@ -159,4 +159,4 @@ class Disentangle_Contrast(nn.Module):
         loss = self._contrastive(patches_q, patches_k, patches_neg)
 
         return loss
-    
+

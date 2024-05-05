@@ -487,7 +487,7 @@ class DeepV3Plus(nn.Module):
             x_tuple = self.layer0([x_o, k_arr])
             x_o = x_tuple[0]
             k_arr = x_tuple[1]
-            if self.training:
+            if self.training and self.args.jit_only:
                 x_j_tuple = self.layer0([x_j, q_arr])
                 x_j = x_j_tuple[0]
                 q_arr = x_j_tuple[1]
@@ -515,7 +515,7 @@ class DeepV3Plus(nn.Module):
                     x_o = self.layer0[7](x_o)
                 x_o = self.layer0[8](x_o)
                 x_o = self.layer0[9](x_o)
-                if self.training:
+                if self.training and self.args.jit_only:
                     x_j = self.layer0[0](x_j)
                     if self.args.wt_layer[0] == 1 or self.args.wt_layer[0] == 2:
                         x_j, q = self.layer0[1](x_j)
@@ -548,7 +548,7 @@ class DeepV3Plus(nn.Module):
                 x_o = self.layer0[2](x_o)
                 x_o = self.layer0[3](x_o)
 
-                if self.training:
+                if self.training and self.args.jit_only:
                     x_j = self.layer0[0](x_j)
                     x_j, q = self.layer0[1](x_j)
                     q_arr.append(q)
@@ -579,30 +579,34 @@ class DeepV3Plus(nn.Module):
         main_out = Upsample(dec2, x_size[2:])
 
         if self.training:
-            x_j_tuple = self.layer1([x_j, q_arr])  # 400
-            low_level_j = x_j_tuple[0]
+            if self.args.jit_only:
+                x_j_tuple = self.layer1([x_j, q_arr])  # 400
+                low_level_j = x_j_tuple[0]
 
-            x_j_tuple = self.layer2(x_j_tuple)  # 100
-            x_j_tuple = self.layer3(x_j_tuple)  # 100
+                x_j_tuple = self.layer2(x_j_tuple)  # 100
+                x_j_tuple = self.layer3(x_j_tuple)  # 100
 
-            x_j_tuple = self.layer4(x_j_tuple)  # 100
-            x_j = x_j_tuple[0]
-            q_arr = x_j_tuple[1]
+                x_j_tuple = self.layer4(x_j_tuple)  # 100
+                x_j = x_j_tuple[0]
+                q_arr = x_j_tuple[1]
 
-            qd_arr.append(x_j)
-            x_j = self.aspp(x_j)
-            dec0_up_j = self.bot_aspp(x_j)
-            dec0_fine_j = self.bot_fine(low_level_j)
-            dec0_up_j = Upsample(dec0_up_j, low_level_j.size()[2:])
-            dec0_j = [dec0_fine_j, dec0_up_j]
-            dec0_j = torch.cat(dec0_j, 1)
-            qd_arr.append(dec0_j)
-            dec1_j = self.final1(dec0_j)
-            qd_arr.append(dec1_j)
-            dec2_j = self.final2(dec1_j)
-            main_out_j = Upsample(dec2_j, x_size[2:])
+                qd_arr.append(x_j)
+                x_j = self.aspp(x_j)
+                dec0_up_j = self.bot_aspp(x_j)
+                dec0_fine_j = self.bot_fine(low_level_j)
+                dec0_up_j = Upsample(dec0_up_j, low_level_j.size()[2:])
+                dec0_j = [dec0_fine_j, dec0_up_j]
+                dec0_j = torch.cat(dec0_j, 1)
+                qd_arr.append(dec0_j)
+                dec1_j = self.final1(dec0_j)
+                qd_arr.append(dec1_j)
+                dec2_j = self.final2(dec1_j)
+                main_out_j = Upsample(dec2_j, x_size[2:])
+            if self.args.jit_only:
+                loss1 = (self.criterion(main_out, gts) + self.criterion(main_out_j, gts)) / 2
+            else:
+                loss1 = self.criterion(main_out, gts)
 
-            loss1 = (self.criterion(main_out, gts) + self.criterion(main_out_j, gts)) / 2
 
             aux_out = self.dsn(aux_out)
             if aux_gts.dim() == 1:
@@ -614,57 +618,58 @@ class DeepV3Plus(nn.Module):
 
             return_loss = [loss1, loss2]
             
-            _, predict = torch.max(dec2, 1)
-            _, predict_j = torch.max(dec2_j, 1)
+            if self.args.jit_only:
+                _, predict = torch.max(dec2, 1)
+                _, predict_j = torch.max(dec2_j, 1)
 
-            if self.args.use_ca:
-                CML = torch.FloatTensor([0]).cuda()
-                CCL = torch.FloatTensor([0]).cuda()
+                if self.args.use_ca:
+                    CML = torch.FloatTensor([0]).cuda()
+                    CCL = torch.FloatTensor([0]).cuda()
 
-                for N, f_maps in enumerate(zip(k_arr, q_arr)):
-                    k_maps, q_maps = f_maps
-                    # detach original images
-                    k_maps = k_maps.detach()
-                    k_cor, _ = get_covariance_matrix(k_maps)
-                    q_cor, _ = get_covariance_matrix(q_maps)
-                    cov_loss = self.criterion_CA(k_cor, q_cor)
-                    crosscov_loss = cross_whitening_loss(k_maps, q_maps)
-                    CML = CML + cov_loss
-                    CCL = CCL + crosscov_loss
-                CML = CML / len(k_arr)
-                CCL = CCL / len(k_arr)
+                    for N, f_maps in enumerate(zip(k_arr, q_arr)):
+                        k_maps, q_maps = f_maps
+                        # detach original images
+                        k_maps = k_maps.detach()
+                        k_cor, _ = get_covariance_matrix(k_maps)
+                        q_cor, _ = get_covariance_matrix(q_maps)
+                        cov_loss = self.criterion_CA(k_cor, q_cor)
+                        crosscov_loss = cross_whitening_loss(k_maps, q_maps)
+                        CML = CML + cov_loss
+                        CCL = CCL + crosscov_loss
+                    CML = CML / len(k_arr)
+                    CCL = CCL / len(k_arr)
 
-                return_loss.append(CML)
-                return_loss.append(CCL)
+                    return_loss.append(CML)
+                    return_loss.append(CCL)
 
-            if self.args.use_cwcl:
-                cwcl = torch.FloatTensor([0]).cuda()
-            if self.args.use_sdcl:
-                sdcl = torch.FloatTensor([0]).cuda()
+                if self.args.use_cwcl:
+                    cwcl = torch.FloatTensor([0]).cuda()
+                if self.args.use_sdcl:
+                    sdcl = torch.FloatTensor([0]).cuda()
 
-            if self.args.use_cwcl or self.args.use_sdcl:
-                for N, f_maps in enumerate(zip(qd_arr, kd_arr)):
-                    feat_q, feat_k = f_maps
+                if self.args.use_cwcl or self.args.use_sdcl:
+                    for N, f_maps in enumerate(zip(qd_arr, kd_arr)):
+                        feat_q, feat_k = f_maps
 
-                    projection = getattr(self, 'ProjectionHead_cls_%d' % N)
-                    
-                    embed_q = projection(feat_q)
-                    embed_k = projection(feat_k)
+                        projection = getattr(self, 'ProjectionHead_cls_%d' % N)
 
-                    if self.args.use_cwcl:
-                        loss_cw = self.criterion_CWCL(embed_q, embed_k, gts, predict)
-                        cwcl = cwcl + loss_cw.mean()
+                        embed_q = projection(feat_q)
+                        embed_k = projection(feat_k)
 
-                    if self.args.use_sdcl:
-                        loss_sd = self.criterion_SDCL(embed_q, embed_k, predict, predict_j, gts)
-                        sdcl = sdcl + loss_sd.mean()
+                        if self.args.use_cwcl:
+                            loss_cw = self.criterion_CWCL(embed_q, embed_k, gts, predict)
+                            cwcl = cwcl + loss_cw.mean()
 
-            if self.args.use_cwcl:
-                cwcl = cwcl / len(qd_arr)
-                return_loss.append(cwcl)
-            if self.args.use_sdcl:
-                sdcl = sdcl / len(qd_arr)
-                return_loss.append(sdcl)
+                        if self.args.use_sdcl:
+                            loss_sd = self.criterion_SDCL(embed_q, embed_k, predict, predict_j, gts)
+                            sdcl = sdcl + loss_sd.mean()
+
+                if self.args.use_cwcl:
+                    cwcl = cwcl / len(qd_arr)
+                    return_loss.append(cwcl)
+                if self.args.use_sdcl:
+                    sdcl = sdcl / len(qd_arr)
+                    return_loss.append(sdcl)
             
             return return_loss
         else:

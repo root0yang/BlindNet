@@ -167,18 +167,14 @@ parser.add_argument('--w2', type=float, default=0.0,
                    help='Cross Covariance Loss Weight')
 parser.add_argument('--alpha', type=float, default=0.0)
 parser.add_argument('--use_ca', action='store_true', default=False)
-# parser.add_argument('--tau', type=float, default=0.0)
-
-# Patch Contrastive arguments
 parser.add_argument('--jit_only', action='store_true', default=False)
-
+# Contrastive arguments
 parser.add_argument('--use_cwcl', action='store_true', default=False)
 parser.add_argument('--nce_T', type=float, default=0.0)
 parser.add_argument('--contrast_temperature', type=float, default=0.1)
 parser.add_argument('--contrast_max_classes', type=int, default=10)
 parser.add_argument('--contrast_max_views', type=int, default=10)
 parser.add_argument('--w3', type=float, default=0.3)
-
 parser.add_argument('--use_sdcl', action='store_true', default=False)
 parser.add_argument('--w4', type=float, default=0.0)
 parser.add_argument('--num_patch', type=int, default=0)

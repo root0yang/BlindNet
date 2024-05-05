@@ -247,11 +247,14 @@ def main():
     if args.snapshot:
         epoch, mean_iu = optimizer.load_weights(net, optim, scheduler,
                             args.snapshot, args.restore_optimizer)
+        print("Continue Training")
         if args.restore_optimizer is True:
             iter_per_epoch = len(train_loader)
             i = iter_per_epoch * epoch
         else:
             epoch = 0
+    else:
+        print("New Training")
 
     print("#### iteration", i)
     torch.cuda.empty_cache()
@@ -266,7 +269,11 @@ def main():
 
         i = train(train_loader, net, optim, epoch, writer, scheduler, args.max_iter)
         train_loader.sampler.set_epoch(epoch + 1)
-
+        
+        for dataset, val_loader in extra_val_loaders.items():
+            ("Validation after epochs")
+            validate(val_loader, dataset, net, criterion_val, optim, scheduler, epoch, writer, i)
+            
         if args.local_rank == 0:
             print("Saving pth file...")
             evaluate_eval(args, net, optim, scheduler, None, None, [],
@@ -319,8 +326,11 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, sty
     for i, data in enumerate(train_loader):
         if curr_iter >= max_iter:
             break
-
-        inputs, inputs_color, gts, _,  aux_gts = data
+            
+        if args.jit_only:
+            inputs, inputs_color, gts, _,  aux_gts = data
+        else:
+            inputs, gts, _,  aux_gts = data
 
         # Multi source and AGG case
         if len(inputs.shape) == 5:
@@ -337,7 +347,8 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, sty
             B, C, H, W = inputs.shape
             num_domains = 1
             inputs = [inputs]
-            inputs_color = [inputs_color]
+            if args.jit_only:
+                inputs_color = [inputs_color]
             gts = [gts]
             aux_gts = [aux_gts]
 
@@ -351,7 +362,7 @@ def train(train_loader, net, optim, curr_epoch, writer, scheduler, max_iter, sty
 
             img_gt = None
             input, input_color, gt = input.cuda(), input_color.cuda(), gt.cuda()
-
+            
             optim.zero_grad()
             
             # if dataloader gives color jittered image

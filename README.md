@@ -153,7 +153,7 @@ __C.DATASET.SYNTHIA_DIR = <YOUR_SYNTHIA_PATH>
 
 7. You can infer the segmentation results from images through pretrained model with following commands.
 ```
-<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/infer_r50os16_cty.sh <weight_file_location> <result_save_location>
+<path_to_blindnet>$ CUDA_VISIBLE_DEVICES=0,1 ./scripts/blindnet_infer_r50os16.sh <weight_file_location> <result_save_location>
 ```
 
 ## Citation

@@ -293,13 +293,11 @@ class Mapillary(data.Dataset):
             img = self.transform(img)
 
         rgb_mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        # rgb_mean_std = ([-0.485, -0.456, -0.406], [1/0.229, 1/0.224, 1/0.225])
         img_gt = transforms.Normalize(*rgb_mean_std)(img)
         if self.image_in:
             eps = 1e-5
             rgb_mean_std = ([torch.mean(img[0]), torch.mean(img[1]), torch.mean(img[2])],
                     [torch.std(img[0])+eps, torch.std(img[1])+eps, torch.std(img[2])+eps])
-        # if self.mode == 'train':
         img = transforms.Normalize(*rgb_mean_std)(img)
 
         if self.target_aux_transform is not None:

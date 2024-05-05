@@ -291,7 +291,6 @@ class Synthia(data.Dataset):
             img = self.transform(img)
 
         rgb_mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        # rgb_mean_std = ([-0.485, -0.456, -0.406], [1/0.229, 1/0.224, 1/0.225])
         img_gt = transforms.Normalize(*rgb_mean_std)(img)
         if self.image_in:
             eps = 1e-5
@@ -451,8 +450,7 @@ class SynthiaUniform(data.Dataset):
             img = self.transform(img)
 
         rgb_mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-
-        # img_gt = transforms.Normalize(*rgb_mean_std)(img)
+        img_gt = transforms.Normalize(*rgb_mean_std)(img)
         if self.image_in:
             eps = 1e-5
             rgb_mean_std = ([torch.mean(img[0]), torch.mean(img[1]), torch.mean(img[2])],
@@ -467,161 +465,6 @@ class SynthiaUniform(data.Dataset):
             mask = self.target_transform(mask)
 
         return img, mask, img_name, mask_aux
-
-    def __len__(self):
-        return len(self.imgs_uniform)
-
-
-class SynthiaColor_Uniform(data.Dataset):
-    """
-    Please do not use this for AGG
-    """
-
-    def __init__(self, mode, maxSkip=0, joint_transform_list=None, sliding_crop=None,
-                 transform=None, color_transform=None, target_transform=None, target_aux_transform=None, dump_images=False,
-                 cv_split=None, class_uniform_pct=0.5, class_uniform_tile=1024,
-                 test=False, coarse_boost_classes=None, image_in=False, extract_feature=False):
-        self.mode = mode
-        self.maxSkip = maxSkip
-        self.joint_transform_list = joint_transform_list
-        self.sliding_crop = sliding_crop
-        self.transform = transform
-        self.color_transform = color_transform
-        self.target_transform = target_transform
-        self.target_aux_transform = target_aux_transform
-        self.dump_images = dump_images
-        self.class_uniform_pct = class_uniform_pct
-        self.class_uniform_tile = class_uniform_tile
-        self.coarse_boost_classes = coarse_boost_classes
-        self.image_in = image_in
-        self.extract_feature = extract_feature
-
-
-        if cv_split:
-            self.cv_split = cv_split
-            assert cv_split < cfg.DATASET.CV_SPLITS, \
-                'expected cv_split {} to be < CV_SPLITS {}'.format(
-                    cv_split, cfg.DATASET.CV_SPLITS)
-        else:
-            self.cv_split = 0
-
-        self.imgs, self.aug_imgs = make_dataset(mode, self.maxSkip, cv_split=self.cv_split)
-        assert len(self.imgs), 'Found 0 images, please check the data set'
-
-        # Centroids for fine data
-        json_fn = 'synthia_{}_cv{}_tile{}.json'.format(
-            self.mode, self.cv_split, self.class_uniform_tile)
-        if os.path.isfile(json_fn):
-            with open(json_fn, 'r') as json_data:
-                centroids = json.load(json_data)
-            self.centroids = {int(idx): centroids[idx] for idx in centroids}
-        else:
-            self.centroids = uniform.class_centroids_all(
-                self.imgs,
-                num_classes,
-                id2trainid=trainid_to_trainid,
-                tile_size=class_uniform_tile)
-            with open(json_fn, 'w') as outfile:
-                json.dump(self.centroids, outfile, indent=4)
-
-        self.fine_centroids = self.centroids.copy()
-
-        self.build_epoch()
-
-    def cities_uniform(self, imgs, name):
-        """ list out cities in imgs_uniform """
-        cities = {}
-        for item in imgs:
-            img_fn = item[0]
-            img_fn = os.path.basename(img_fn)
-            city = img_fn.split('_')[0]
-            cities[city] = 1
-        city_names = cities.keys()
-        logging.info('Cities for {} '.format(name) + str(sorted(city_names)))
-
-    def build_epoch(self, cut=False):
-        """
-        Perform Uniform Sampling per epoch to create a new list for training such that it
-        uniformly samples all classes
-        """
-        if self.class_uniform_pct > 0:
-            if cut:
-                # after max_cu_epoch, we only fine images to fine tune
-                self.imgs_uniform = uniform.build_epoch(self.imgs,
-                                                        self.fine_centroids,
-                                                        num_classes,
-                                                        cfg.CLASS_UNIFORM_PCT)
-            else:
-                self.imgs_uniform = uniform.build_epoch(self.imgs + self.aug_imgs,
-                                                        self.centroids,
-                                                        num_classes,
-                                                        cfg.CLASS_UNIFORM_PCT)
-        else:
-            self.imgs_uniform = self.imgs
-
-    def __getitem__(self, index):
-        elem = self.imgs_uniform[index]
-        centroid = None
-        if len(elem) == 4:
-            img_path, mask_path, centroid, class_id = elem
-        else:
-            img_path, mask_path = elem
-        img, mask = Image.open(img_path).convert('RGB'), imageio.imread(mask_path, format='PNG-FI')
-        img_name = os.path.splitext(os.path.basename(img_path))[0]
-
-        # This mask has pixel classes and instance IDs
-        mask = np.array(mask, dtype=np.uint8)[:,:,0]
-        mask_copy = mask.copy()
-        for k, v in trainid_to_trainid.items():
-            mask_copy[mask == k] = v
-        mask = Image.fromarray(mask_copy.astype(np.uint8))
-
-        # Image Transformations
-        if self.extract_feature is not True:
-            if self.joint_transform_list is not None:
-                for idx, xform in enumerate(self.joint_transform_list):
-                    if idx == 0 and centroid is not None:
-                        # HACK
-                        # We assume that the first transform is capable of taking
-                        # in a centroid
-                        img, mask = xform(img, mask, centroid)
-                    else:
-                        img, mask = xform(img, mask)
-
-        # Debug
-        if self.dump_images and centroid is not None:
-            outdir = '../../dump_imgs_{}'.format(self.mode)
-            os.makedirs(outdir, exist_ok=True)
-            dump_img_name = trainid_to_name[class_id] + '_' + img_name
-            out_img_fn = os.path.join(outdir, dump_img_name + '.png')
-            out_msk_fn = os.path.join(outdir, dump_img_name + '_mask.png')
-            mask_img = colorize_mask(np.array(mask))
-            img.save(out_img_fn)
-            mask_img.save(out_msk_fn)
-
-        if self.transform is not None:
-            img_or = self.transform(img)
-
-        if self.color_transform is not None:
-            img_color = self.color_transform(img)
-
-        rgb_mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        # img_gt = transforms.Normalize(*rgb_mean_std)(img)
-        if self.image_in:
-            eps = 1e-5
-            rgb_mean_std = ([torch.mean(img[0]), torch.mean(img[1]), torch.mean(img[2])],
-                    [torch.std(img[0])+eps, torch.std(img[1])+eps, torch.std(img[2])+eps])
-        img_or = transforms.Normalize(*rgb_mean_std)(img_or)
-        img_color = transforms.Normalize(*rgb_mean_std)(img_color)
-
-        if self.target_aux_transform is not None:
-            mask_aux = self.target_aux_transform(mask)
-        else:
-            mask_aux = torch.tensor([0])
-        if self.target_transform is not None:
-            mask = self.target_transform(mask)
-
-        return img_or, img_color, mask, img_name, mask_aux
 
     def __len__(self):
         return len(self.imgs_uniform)

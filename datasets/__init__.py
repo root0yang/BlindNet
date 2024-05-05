@@ -162,32 +162,14 @@ def create_extra_val_loader(args, dataset, val_input_transform, target_transform
                                         cv_split=args.cv,
                                         image_in=args.image_in)
     elif dataset == 'bdd100k':
-        # eval_size = 1024
-        # val_joint_transform_list = [
-        #     joint_transforms.ResizeHeight(eval_size),
-        #     joint_transforms.CenterCropPad(eval_size)]
         val_set = bdd100k.BDD100K('val', 0,
                                   transform=val_input_transform,
                                   target_transform=target_transform,
                                   cv_split=args.cv,
                                   image_in=args.image_in)
     elif dataset == 'gtav':
-        eval_size = 768
-        val_joint_transform_list = [
-            joint_transforms.ResizeHeight(eval_size),
-            joint_transforms.CenterCropPad(eval_size)]
-        val_joint_transform_list = joint_transforms.Compose(val_joint_transform_list)
         val_set = gtav.GTAV('val', 0,
-                            joint_transform=val_joint_transform_list,
                             transform=val_input_transform,
-                            target_transform=target_transform,
-                            cv_split=args.cv,
-                            image_in=args.image_in)
-    elif dataset == 'gtav_jitter':
-        color_input_transform = standard_transforms.ColorJitter(0.8, 0.8, 0.8, 0.3)
-        val_set = gtav.GTAVColor('val', 0,
-                            transform=val_input_transform,
-                            color_transform=color_input_transform,
                             target_transform=target_transform,
                             cv_split=args.cv,
                             image_in=args.image_in)
@@ -198,7 +180,6 @@ def create_extra_val_loader(args, dataset, val_input_transform, target_transform
                                   cv_split=args.cv,
                                   image_in=args.image_in)
     elif dataset == 'mapillary':
-        # eval_size = 1536
         eval_size = 1024
         val_joint_transform_list = [
             joint_transforms.ResizeHeight(eval_size),
@@ -361,7 +342,7 @@ def setup_loaders(args):
         train_sets.append(train_set)
         val_sets.append(val_set)
         val_dataset_names.append('cityscapes')
-
+        
     if 'cityscapes_jitter' in args.dataset:
         dataset = cityscapes
         city_mode = args.city_mode #'train' ## Can be trainval
@@ -504,7 +485,7 @@ def setup_loaders(args):
         train_sets.append(train_set)
         val_sets.append(val_set)
         val_dataset_names.append('gtav')
-
+        
     if 'gtav_jitter' in args.dataset:
         dataset = gtav
         gtav_mode = 'train' ## Can be trainval
@@ -552,7 +533,54 @@ def setup_loaders(args):
         train_sets.append(train_set)
         val_sets.append(val_set)
         val_dataset_names.append('gtav')
+        
+    if 'synthia' in args.dataset:
+        dataset = synthia
+        synthia_mode = 'train' ## Can be trainval
+        train_joint_transform_list, train_joint_transform = get_train_joint_transform(args, dataset)
+        train_input_transform, val_input_transform = get_input_transforms(args, dataset)
+        target_transform, target_train_transform, target_aux_train_transform = get_target_transforms(args, dataset)
 
+        if args.class_uniform_pct:
+            if args.coarse_boost_classes:
+                coarse_boost_classes = \
+                    [int(c) for c in args.coarse_boost_classes.split(',')]
+            else:
+                coarse_boost_classes = None
+
+            train_set = dataset.SynthiaUniform(
+                synthia_mode, args.maxSkip,
+                joint_transform_list=train_joint_transform_list,
+                transform=train_input_transform,
+                target_transform=target_train_transform,
+                target_aux_transform=target_aux_train_transform,
+                dump_images=args.dump_augmentation_images,
+                cv_split=args.cv,
+                class_uniform_pct=args.class_uniform_pct,
+                class_uniform_tile=args.class_uniform_tile,
+                test=args.test_mode,
+                coarse_boost_classes=coarse_boost_classes,
+                image_in=args.image_in)
+        else:
+            train_set = dataset.Synthia(
+                synthia_mode, 0,
+                joint_transform=train_joint_transform,
+                transform=train_input_transform,
+                target_transform=target_train_transform,
+                target_aux_transform=target_aux_train_transform,
+                dump_images=args.dump_augmentation_images,
+                cv_split=args.cv,
+                image_in=args.image_in)
+
+        val_set = dataset.Synthia('val', 0,
+                                  transform=val_input_transform,
+                                  target_transform=target_transform,
+                                  cv_split=args.cv,
+                                  image_in=args.image_in)
+        train_sets.append(train_set)
+        val_sets.append(val_set)
+        val_dataset_names.append('synthia')
+    
     if 'synthia_jitter' in args.dataset:
         dataset = synthia
         synthia_mode = 'train' ## Can be trainval
@@ -601,14 +629,14 @@ def setup_loaders(args):
         train_sets.append(train_set)
         val_sets.append(val_set)
         val_dataset_names.append('synthia_jitter')
-
+        
     if 'mapillary' in args.dataset:
         dataset = mapillary
         train_joint_transform_list, train_joint_transform = get_train_joint_transform(args, dataset)
         train_input_transform, val_input_transform = get_input_transforms(args, dataset)
         target_transform, target_train_transform, target_aux_train_transform = get_target_transforms(args, dataset)
 
-        eval_size = 1024
+        eval_size = 1536
         val_joint_transform_list = [
             joint_transforms.ResizeHeight(eval_size),
             joint_transforms.CenterCropPad(eval_size)]

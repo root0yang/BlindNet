@@ -80,7 +80,7 @@ def class_centroids_image(item, tile_size, num_classes, id2trainid):
     pbar.update(1)
     return centroids
 
-import imageio as m
+import scipy.misc as m
 
 def class_centroids_image_from_color(item, tile_size, num_classes, id2trainid):
     """

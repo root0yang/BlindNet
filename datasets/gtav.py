@@ -279,8 +279,7 @@ class GTAV(data.Dataset):
             eps = 1e-5
             rgb_mean_std = ([torch.mean(img[0]), torch.mean(img[1]), torch.mean(img[2])],
                     [torch.std(img[0])+eps, torch.std(img[1])+eps, torch.std(img[2])+eps])
-        if self.mode == 'train':
-            img = transforms.Normalize(*rgb_mean_std)(img)
+        img = transforms.Normalize(*rgb_mean_std)(img)
 
         if self.target_aux_transform is not None:
             mask_aux = self.target_aux_transform(mask)
@@ -633,8 +632,6 @@ class GTAVUniform(data.Dataset):
     def __len__(self):
         return len(self.imgs_uniform)
 
-
-
 class GTAVColor_Uniform(data.Dataset):
     """
     Please do not use this for AGG
@@ -833,6 +830,7 @@ class GTAVColor_Uniform(data.Dataset):
 
     def __len__(self):
         return len(self.imgs_uniform)
+
 
 class GTAVAug(data.Dataset):
 
